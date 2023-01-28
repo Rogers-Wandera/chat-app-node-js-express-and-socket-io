@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Document</title>
+</head>
+<body>
+      <div id="error-container"></div>
+      <input id="name" type="text" name="name" placeholder="Enter your name!">
+      <button type="button" name="button" id="button">Let me chat!</button>
+
+   <script src="/socket.io/socket.io.js"></script>
+
+   <script>
+      var socket = io();
+      var user;
+
+      function getUserName() {
+         document.getElementById("button").addEventListener("click", () => {
+            const userName = document.getElementById("name").value;
+            if(userName){
+               socket.emit("getUserName", userName);
+               userName = "";
+            }
+         })
+      }
+      getUserName();
+
+      socket.on("userExists", (data) => {
+         document.getElementById("error-container").innerHTML = data;
+      })
+
+      socket.on("setUser", (data) => {
+         user = data.username;
+         socket.on("welcome", (data) => {
+            document.body.innerHTML = `
+               <p id='welcome'></p>
+               <input type='text' id='messageinput'>
+               <button id='sendmessage' type='button'>send</button>
+               <div id='displaymessage'></div>
+            `
+
+            document.getElementById("welcome").innerHTML = `Welcome ${data.username}`
+            function sendMessage() {
+               document.getElementById("sendmessage").addEventListener("click", () => {
+                  const message = document.getElementById("messageinput").value;
+                  if(message){
+                     socket.emit("msg", { message: message, user: user })
+                     document.getElementById("messageinput").value = ""
+                  }
+               })
+            }
+            sendMessage();
+
+            socket.on("newMsg", (data) => {
+               document.getElementById("displaymessage").innerHTML += `
+                  <p> <b> ${data.user} ${data.message}</b> </p>
+               `
+            })
+         })
+      })
+   </script>
+</body>
+</html>
